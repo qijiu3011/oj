@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ problem.id }}. {{ problem.title }} - OJ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: #f5f5f5; color: #333; min-height: 100vh;
+  }
+  nav {
+    background: #2c3e50; color: #fff; padding: 0 24px;
+    display: flex; align-items: center; height: 52px; gap: 20px;
+  }
+  nav .brand { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; text-decoration: none; color: #fff; }
+  nav a:not(.brand) { color: #bdc3c7; text-decoration: none; font-size: 14px; }
+  nav a:hover { color: #fff; }
+  nav .right { margin-left: auto; }
+  .container { max-width: 1000px; margin: 24px auto; padding: 0 20px; display: flex; gap: 20px; }
+  .side { width: 220px; flex-shrink: 0; }
+  .side .card {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    padding: 16px;
+  }
+  .side .card h3 { font-size: 13px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .side .card ul { list-style: none; }
+  .side .card li { padding: 6px 8px; font-size: 13px; border-radius: 4px; }
+  .side .card li a { color: #333; text-decoration: none; display: block; }
+  .side .card li a:hover { color: #3498db; }
+  .side .card li.active { background: #2c3e50; }
+  .side .card li.active a { color: #fff; }
+  .main { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+  .panel {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    padding: 20px;
+  }
+  .panel-title {
+    font-size: 15px; font-weight: 600; color: #555;
+    margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee;
+  }
+  #problem-desc { white-space: pre-wrap; font-size: 14px; line-height: 1.7; }
+  textarea {
+    width: 100%; min-height: 280px; font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", Consolas, monospace;
+    font-size: 13px; padding: 12px; border: 1px solid #ddd; border-radius: 6px;
+    resize: vertical; line-height: 1.5; tab-size: 4;
+  }
+  textarea:focus { outline: none; border-color: #2c3e50; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .btn {
+    padding: 8px 20px; border: none; border-radius: 6px;
+    font-size: 14px; font-weight: 500; cursor: pointer; transition: .15s;
+  }
+  .btn-primary { background: #2c3e50; color: #fff; }
+  .btn-primary:hover { background: #1a252f; }
+  .btn-primary:disabled { background: #95a5a6; cursor: not-allowed; }
+  .btn-secondary { background: #ecf0f1; color: #333; }
+  .btn-secondary:hover { background: #d5dbdb; }
+  #status { margin-left: auto; font-size: 13px; }
+  #status.pending { color: #e67e22; }
+  #status.running { color: #3498db; }
+  #status.accepted { color: #27ae60; font-weight: 600; }
+  #status.wa { color: #e74c3c; font-weight: 600; }
+  #status.ce { color: #e74c3c; }
+  #status.error { color: #e74c3c; }
+  .results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .results-table th {
+    text-align: left; padding: 8px 10px; background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6; font-weight: 600;
+  }
+  .results-table td { padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+  .results-table .pass { color: #27ae60; font-weight: 600; }
+  .results-table .fail { color: #e74c3c; font-weight: 600; }
+  .diff { background: #fff0f0; }
+  select, input {
+    padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px;
+    font-size: 14px; background: #fff;
+  }
+  select:focus, input:focus { outline: none; border-color: #2c3e50; }
+  .back-link {
+    display: inline-block; margin-bottom: 8px; font-size: 13px;
+    color: #7f8c8d; text-decoration: none;
+  }
+  .back-link:hover { color: #2c3e50; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">📖 OJ</a>
+  <a href="/">题目列表</a>
+  <a href="/rank">排行榜</a>
+  <div class="right"></div>
+</nav>
+<div class="container">
+  <div class="side">
+    <div class="card">
+      <h3>题目列表</h3>
+      <ul id="prob-list">
+        {% for p in problems %}
+        <li{% if p.id == problem.id %} class="active"{% endif %}><a href="/problem/{{ p.id }}">{{ p.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="main">
+    <a href="/" class="back-link">← 返回题目列表</a>
+    <div class="panel">
+      <div class="panel-title">{{ problem.id }}. {{ problem.title }}</div>
+      <pre id="problem-desc">{{ problem.desc }}</pre>
+    </div>
+    <div class="panel">
+      <div class="panel-title">提交代码</div>
+      <div style="margin-bottom:10px;display:flex;gap:10px">
+        <select id="lang-select">
+          <option value="py">Python</option>
+          <option value="cpp">C++ (C++17)</option>
+          <option value="java">Java 17</option>
+        </select>
+      </div>
+      <textarea id="code" placeholder="在此粘贴代码"></textarea>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="submit-btn" onclick="submitCode()">提交评测</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('code').value=''">清空</button>
+        <span id="status"></span>
+      </div>
+    </div>
+    <div class="panel" id="result-panel" style="display:none">
+      <div class="panel-title">评测结果</div>
+      <table class="results-table">
+        <thead><tr><th>测试点</th><th>输入</th><th>期望输出</th><th>实际输出</th><th>结果</th></tr></thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+const CURRENT_PID = "{{ problem.id }}";
+let polling = false;
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Load user info
+  fetch("/api/me");
+});
+
+function submitCode() {
+  const code = document.getElementById("code").value.trim();
+  if (!code) { alert("请先输入代码"); return; }
+  if (polling) return;
+
+  const btn = document.getElementById("submit-btn");
+  const status = document.getElementById("status");
+  btn.disabled = true;
+  status.className = "";
+  status.textContent = "提交中...";
+
+  fetch("/api/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pid: CURRENT_PID,
+      code,
+      lang: document.getElementById("lang-select").value,
+    }),
+  })
+    .then(r => r.json().then(d => ({status: r.status, body: d})))
+    .then(({status: httpStatus, body}) => {
+      if (body.error) {
+        if (httpStatus === 401) { window.location.href = "/login"; return; }
+        status.className = "error";
+        status.textContent = body.error;
+        btn.disabled = false;
+        return;
+      }
+      status.className = "pending";
+      status.textContent = "Pending...";
+      polling = true;
+      pollResult(body.submission_id);
+    })
+    .catch(err => {
+      status.className = "error";
+      status.textContent = "提交失败: " + err.message;
+      btn.disabled = false;
+    });
+}
+
+function pollResult(submissionId) {
+  fetch("/api/result/" + submissionId)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        document.getElementById("status").className = "error";
+        document.getElementById("status").textContent = data.error;
+        document.getElementById("submit-btn").disabled = false;
+        polling = false;
+        return;
+      }
+
+      const statusEl = document.getElementById("status");
+      const s = data.status;
+
+      if (s === "Pending") {
+        statusEl.className = "pending"; statusEl.textContent = "Pending...";
+      } else if (s === "Running") {
+        statusEl.className = "running"; statusEl.textContent = "Running...";
+      } else {
+        const cls = { "Accepted": "accepted", "Wrong Answer": "wa", "Compilation Error": "ce", "System Error": "error" }[s] || "error";
+        statusEl.className = cls;
+        statusEl.textContent = s;
+
+        if (data.results) {
+          const tbody = document.getElementById("results-body");
+          tbody.innerHTML = "";
+          data.results.forEach(r => {
+            const tr = document.createElement("tr");
+            if (!r.passed) tr.className = "diff";
+            tr.innerHTML = `<td>#${r.idx}</td><td><code>${esc(r.input)}</code></td><td><code>${esc(r.expected)}</code></td><td><code>${esc(r.actual)}</code></td><td class="${r.passed ? 'pass' : 'fail'}">${r.passed ? '✓' : '✗'}</td>`;
+            tbody.appendChild(tr);
+          });
+          document.getElementById("result-panel").style.display = "";
+        }
+        document.getElementById("submit-btn").disabled = false;
+        polling = false;
+        return;
+      }
+      setTimeout(() => pollResult(submissionId), 1000);
+    })
+    .catch(() => setTimeout(() => pollResult(submissionId), 1000));
+}
+
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+</script>
+</body>
+</html>

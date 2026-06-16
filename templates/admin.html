@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理面板 - OJ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: #f5f5f5; color: #333; min-height: 100vh;
+  }
+  nav {
+    background: #2c3e50; color: #fff; padding: 0 24px;
+    display: flex; align-items: center; height: 52px; gap: 20px;
+  }
+  nav .brand { font-size: 18px; font-weight: 700; text-decoration: none; color: #fff; }
+  nav a:not(.brand) { color: #bdc3c7; text-decoration: none; font-size: 14px; }
+  nav a:hover { color: #fff; }
+  nav .right { margin-left: auto; }
+  .container { max-width: 1000px; margin: 24px auto; padding: 0 20px; display: flex; gap: 20px; }
+  .side { width: 220px; flex-shrink: 0; }
+  .side .card {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 16px;
+  }
+  .side .card h3 { font-size: 13px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .side .card ul { list-style: none; }
+  .side .card li {
+    padding: 7px 10px; font-size: 13px; border-radius: 4px; cursor: pointer;
+  }
+  .side .card li:hover { background: #eef2f7; }
+  .side .card li.active { background: #2c3e50; color: #fff; }
+  .main { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+  .panel {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 20px;
+  }
+  .panel-title {
+    font-size: 15px; font-weight: 600; color: #555;
+    margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee;
+  }
+  textarea {
+    width: 100%; min-height: 200px; font-family: Consolas, monospace;
+    font-size: 13px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;
+    resize: vertical; line-height: 1.5;
+  }
+  textarea:focus { outline: none; border-color: #2c3e50; }
+  .btn {
+    padding: 8px 20px; border: none; border-radius: 6px;
+    font-size: 14px; font-weight: 500; cursor: pointer; transition: .15s;
+  }
+  .btn-primary { background: #2c3e50; color: #fff; }
+  .btn-primary:hover { background: #1a252f; }
+  .btn-primary:disabled { background: #95a5a6; cursor: not-allowed; }
+  .btn-success { background: #27ae60; color: #fff; }
+  .btn-success:hover { background: #219a52; }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .msg { font-size: 13px; margin-top: 8px; }
+  .msg.ok { color: #27ae60; }
+  .msg.err { color: #e74c3c; }
+  .files { font-size: 13px; color: #888; margin-top: 8px; }
+  .files span { display: inline-block; background: #ecf0f1; padding: 2px 8px; border-radius: 4px; margin: 2px; }
+  input[type="file"] { font-size: 13px; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">📖 OJ</a>
+  <a href="/">题目列表</a>
+  <a href="/rank">排行榜</a>
+  <div class="right"></div>
+</nav>
+<div class="container">
+  <div class="side">
+    <div class="card">
+      <h3>题目管理</h3>
+      <ul id="admin-problem-list">
+        {% for p in problems %}
+        <li onclick="selectProblem('{{ p.id }}', this)">{{ p.title }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="main">
+    <div class="panel">
+      <div class="panel-title">✏️ 编辑题目描述</div>
+      <textarea id="desc-editor" placeholder="选择左侧题目后编辑描述"></textarea>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="save-desc-btn" onclick="saveDesc()">保存描述</button>
+        <span id="desc-msg" class="msg"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">📦 上传测试数据</div>
+      <p style="font-size:13px;color:#888;margin-bottom:10px">上传 .zip 文件，内含 <code>input1.txt output1.txt input2.txt output2.txt ...</code></p>
+      <input type="file" id="zip-input" accept=".zip">
+      <div class="toolbar">
+        <button class="btn btn-success" onclick="uploadZip()">上传</button>
+        <span id="upload-msg" class="msg"></span>
+      </div>
+      <div id="current-files" class="files"></div>
+    </div>
+  </div>
+</div>
+<script>
+let currentPid = null;
+
+function selectProblem(pid, el) {
+  currentPid = pid;
+  document.querySelectorAll("#admin-problem-list li").forEach(li => li.classList.remove("active"));
+  if (el) el.classList.add("active");
+  document.getElementById("desc-msg").textContent = "";
+  document.getElementById("upload-msg").textContent = "";
+
+  fetch("/api/admin/problem/" + pid)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("desc-editor").value = data.desc;
+      const filesDiv = document.getElementById("current-files");
+      if (data.test_files && data.test_files.length) {
+        filesDiv.innerHTML = "当前测试文件： " + data.test_files.map(f => `<span>${f}</span>`).join(" ");
+      } else {
+        filesDiv.innerHTML = "暂无测试文件";
+      }
+    })
+    .catch(() => {
+      document.getElementById("desc-editor").value = "加载失败";
+    });
+}
+
+function saveDesc() {
+  if (!currentPid) { alert("请先选择题目"); return; }
+  const desc = document.getElementById("desc-editor").value;
+  const btn = document.getElementById("save-desc-btn");
+  const msg = document.getElementById("desc-msg");
+  btn.disabled = true; msg.textContent = "保存中...";
+  fetch("/api/admin/problem/" + currentPid + "/desc", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ desc }),
+  })
+    .then(r => r.json())
+    .then(d => {
+      msg.className = "msg " + (d.ok ? "ok" : "err");
+      msg.textContent = d.ok ? "✓ 已保存" : d.error;
+      btn.disabled = false;
+    })
+    .catch(() => { msg.className = "msg err"; msg.textContent = "保存失败"; btn.disabled = false; });
+}
+
+function uploadZip() {
+  if (!currentPid) { alert("请先选择题目"); return; }
+  const input = document.getElementById("zip-input");
+  if (!input.files || !input.files[0]) { alert("请选择 .zip 文件"); return; }
+  const form = new FormData();
+  form.append("file", input.files[0]);
+  const btn = document.querySelector(".btn-success");
+  const msg = document.getElementById("upload-msg");
+  btn.disabled = true; msg.textContent = "上传中...";
+  fetch("/api/admin/problem/" + currentPid + "/upload", {
+    method: "POST",
+    body: form,
+  })
+    .then(r => r.json())
+    .then(d => {
+      msg.className = "msg " + (d.ok ? "ok" : "err");
+      msg.textContent = d.ok ? "✓ 上传成功：" + d.files.join(", ") : d.error;
+      btn.disabled = false;
+      if (d.ok) { input.value = ""; selectProblem(currentPid, document.querySelector("#admin-problem-list li.active")); }
+    })
+    .catch(() => { msg.className = "msg err"; msg.textContent = "上传失败"; btn.disabled = false; });
+}
+
+// Auto-select first problem
+document.addEventListener("DOMContentLoaded", () => {
+  const list = document.getElementById("admin-problem-list");
+  if (list && list.children.length > 0) {
+    list.children[0].click();
+  }
+});
+</script>
+</body>
+</html>

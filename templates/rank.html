@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>排行榜 - OJ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: #f5f5f5; color: #333; min-height: 100vh;
+  }
+  nav {
+    background: #2c3e50; color: #fff; padding: 0 24px;
+    display: flex; align-items: center; height: 52px; gap: 20px;
+  }
+  nav .brand { font-size: 18px; font-weight: 700; text-decoration: none; color: #fff; }
+  nav a:not(.brand) { color: #bdc3c7; text-decoration: none; font-size: 14px; }
+  nav a:hover { color: #fff; }
+  nav .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .container { max-width: 800px; margin: 30px auto; padding: 0 20px; }
+  .panel {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    padding: 24px;
+  }
+  .panel h2 { font-size: 18px; margin-bottom: 16px; color: #2c3e50; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left; padding: 10px 12px; background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6; font-weight: 600; color: #555;
+  }
+  td { padding: 12px; border-bottom: 1px solid #eee; }
+  tr:hover td { background: #f8f9fa; }
+  .rank-num { font-weight: 700; color: #2c3e50; }
+  .rank-1 { color: #f1c40f; } .rank-2 { color: #95a5a6; } .rank-3 { color: #e67e22; }
+  .ac-badge {
+    display: inline-block; background: #27ae60; color: #fff;
+    padding: 2px 10px; border-radius: 12px; font-weight: 600; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">📖 OJ</a>
+  <a href="/">题目列表</a>
+  <a href="/rank">排行榜</a>
+  <div class="right"></div>
+</nav>
+<div class="container">
+  <div class="panel">
+    <h2>🏆 排行榜</h2>
+    <table>
+      <thead><tr><th style="width:60px">排名</th><th>学号</th><th>姓名</th><th style="width:100px">AC</th><th style="width:100px">总提交</th></tr></thead>
+      <tbody id="rank-body">
+        <tr><td colspan="5" style="text-align:center;color:#aaa">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+function loadRank() {
+  fetch("/api/rank")
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById("rank-body");
+      tbody.innerHTML = "";
+      data.forEach(r => {
+        const tr = document.createElement("tr");
+        const cls = r.rank === 1 ? "rank-1" : r.rank === 2 ? "rank-2" : r.rank === 3 ? "rank-3" : "";
+        tr.innerHTML =
+          `<td><span class="rank-num ${cls}">${r.rank}</span></td>` +
+          `<td>${esc(r.student_id)}</td>` +
+          `<td>${esc(r.name)}</td>` +
+          `<td><span class="ac-badge">${r.ac_count}</span></td>` +
+          `<td>${r.total_sub}</td>`;
+        tbody.appendChild(tr);
+      });
+    });
+}
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+loadRank();
+</script>
+</body>
+</html>

@@ -3,281 +3,98 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Online Judge</title>
+<title>题目列表 - OJ</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
     background: #f5f5f5; color: #333; min-height: 100vh;
   }
-  header {
-    background: #2c3e50; color: #fff; padding: 16px 24px;
-    font-size: 20px; font-weight: 700; letter-spacing: 0.5px;
-    display: flex; align-items: center; gap: 12px;
+  nav {
+    background: #2c3e50; color: #fff; padding: 0 24px;
+    display: flex; align-items: center; height: 52px; gap: 20px;
   }
-  header .sub { font-size: 13px; font-weight: 400; color: #95a5a6; margin-left: auto; }
-  .container { display: flex; gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
-  .sidebar {
-    width: 240px; flex-shrink: 0;
-    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    padding: 16px; height: fit-content;
-  }
-  .sidebar h3 { font-size: 14px; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-  .sidebar ul { list-style: none; }
-  .sidebar li {
-    padding: 8px 12px; cursor: pointer; border-radius: 6px;
-    font-size: 14px; transition: background 0.15s;
-  }
-  .sidebar li:hover { background: #eef2f7; }
-  .sidebar li.active { background: #2c3e50; color: #fff; }
-  .main {
-    flex: 1; display: flex; flex-direction: column; gap: 16px;
-  }
+  nav .brand { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; text-decoration: none; color: #fff; }
+  nav a:not(.brand) { color: #bdc3c7; text-decoration: none; font-size: 14px; }
+  nav a:hover { color: #fff; }
+  nav .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  nav .right span { font-size: 13px; color: #95a5a6; }
+  nav .right .name { color: #ecf0f1; }
+  .container { max-width: 900px; margin: 30px auto; padding: 0 20px; }
   .panel {
     background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    padding: 20px;
+    padding: 24px;
   }
-  .panel-title {
-    font-size: 15px; font-weight: 600; color: #555;
-    margin-bottom: 12px; padding-bottom: 8px;
-    border-bottom: 1px solid #eee;
+  .panel h2 { font-size: 18px; margin-bottom: 16px; color: #2c3e50; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 10px 12px; background: #f8f9fa; border-bottom: 2px solid #dee2e6; font-weight: 600; color: #555; }
+  td { padding: 12px; border-bottom: 1px solid #eee; }
+  tr:hover td { background: #f8f9fa; }
+  .prob-id { color: #888; font-size: 13px; }
+  .prob-title { color: #2c3e50; font-weight: 500; text-decoration: none; }
+  .prob-title:hover { color: #3498db; }
+  .btn-logout {
+    background: none; border: 1px solid #7f8c8d; color: #bdc3c7;
+    padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;
   }
-  #problem-desc { white-space: pre-wrap; font-size: 14px; line-height: 1.7; }
-  #problem-desc:empty::after { content: "请从左侧选择一个题目"; color: #aaa; }
-  textarea {
-    width: 100%; min-height: 260px; font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", Consolas, monospace;
-    font-size: 13px; padding: 12px; border: 1px solid #ddd; border-radius: 6px;
-    resize: vertical; line-height: 1.5; tab-size: 4;
+  .btn-logout:hover { border-color: #e74c3c; color: #e74c3c; }
+  .admin-badge {
+    background: #e74c3c; color: #fff; font-size: 11px; padding: 2px 8px;
+    border-radius: 10px; text-decoration: none; font-weight: 500;
   }
-  textarea:focus { outline: none; border-color: #2c3e50; }
-  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .toolbar .row { display: flex; gap: 10px; align-items: center; width: 100%; }
-  .btn {
-    padding: 8px 20px; border: none; border-radius: 6px;
-    font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.15s;
-  }
-  .btn-primary { background: #2c3e50; color: #fff; }
-  .btn-primary:hover { background: #1a252f; }
-  .btn-primary:disabled { background: #95a5a6; cursor: not-allowed; }
-  .btn-secondary { background: #ecf0f1; color: #333; }
-  .btn-secondary:hover { background: #d5dbdb; }
-  #status {
-    margin-left: auto; font-size: 13px;
-  }
-  #status.pending { color: #e67e22; }
-  #status.running { color: #3498db; }
-  #status.accepted { color: #27ae60; font-weight: 600; }
-  #status.wa { color: #e74c3c; font-weight: 600; }
-  #status.ce { color: #e74c3c; }
-  #status.error { color: #e74c3c; }
-
-  .results-table {
-    width: 100%; border-collapse: collapse; font-size: 13px;
-  }
-  .results-table th {
-    text-align: left; padding: 8px 10px; background: #f8f9fa;
-    border-bottom: 2px solid #dee2e6; font-weight: 600;
-  }
-  .results-table td {
-    padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: top;
-  }
-  .results-table .pass { color: #27ae60; font-weight: 600; }
-  .results-table .fail { color: #e74c3c; font-weight: 600; }
-  .diff { background: #fff0f0; }
-
-  input, select {
-    padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px;
-    font-size: 14px; background: #fff;
-  }
-  input:focus, select:focus { outline: none; border-color: #2c3e50; }
-  #user-name { width: 120px; }
 </style>
 </head>
 <body>
-<header>
-  📖 Online Judge
-  <span class="sub">校赛评测系统</span>
-</header>
-<div class="container">
-  <div class="sidebar">
-    <h3>题目列表</h3>
-    <ul id="problem-list">
-      {% for p in problems %}
-      <li data-pid="{{ p.id }}" onclick="selectProblem('{{ p.id }}', this)">{{ p.title }}</li>
-      {% endfor %}
-    </ul>
+<nav>
+  <a href="/" class="brand">📖 OJ</a>
+  <a href="/rank">排行榜</a>
+  <div class="right">
+    <span id="nav-user"></span>
+    <span id="nav-admin-link"></span>
+    <button class="btn-logout" id="btn-logout" style="display:none" onclick="logout()">退出</button>
   </div>
-  <div class="main">
-    <div class="panel">
-      <div class="panel-title">题目描述</div>
-      <pre id="problem-desc"></pre>
-    </div>
-    <div class="panel">
-      <div class="panel-title">提交代码</div>
-      <div class="toolbar" style="margin-bottom:10px">
-        <input id="user-name" placeholder="选手姓名 / 学号" maxlength="32">
-        <select id="lang-select">
-          <option value="py">Python</option>
-          <option value="cpp">C++ (C++17)</option>
-          <option value="java">Java 17</option>
-        </select>
-      </div>
-      <textarea id="code" placeholder="在此粘贴代码"></textarea>
-      <div class="toolbar" style="margin-top:12px">
-        <button class="btn btn-primary" id="submit-btn" onclick="submitCode()">提交评测</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('code').value=''">清空</button>
-        <span id="status"></span>
-      </div>
-    </div>
-    <div class="panel" id="result-panel" style="display:none">
-      <div class="panel-title">评测结果</div>
-      <table class="results-table">
-        <thead><tr><th>测试点</th><th>输入</th><th>期望输出</th><th>实际输出</th><th>结果</th></tr></thead>
-        <tbody id="results-body"></tbody>
-      </table>
-    </div>
+</nav>
+<div class="container">
+  <div class="panel">
+    <h2>📋 题目列表</h2>
+    <table>
+      <thead><tr><th style="width:80px">#</th><th>题目名称</th></tr></thead>
+      <tbody>
+        {% for p in problems %}
+        <tr>
+          <td class="prob-id">{{ p.id }}</td>
+          <td><a class="prob-title" href="/problem/{{ p.id }}">{{ p.title }}</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 <script>
-let currentPid = null;
-let polling = false;
-
-window.addEventListener("DOMContentLoaded", () => {
-  const list = document.getElementById("problem-list");
-  if (list && list.children.length > 0) {
-    selectProblem(list.children[0].dataset.pid, list.children[0]);
-  }
-});
-
-function selectProblem(pid, el) {
-  currentPid = pid;
-  document.querySelectorAll("#problem-list li").forEach(li => li.classList.remove("active"));
-  if (el) el.classList.add("active");
-  document.getElementById("problem-desc").textContent = "加载中...";
-  document.getElementById("result-panel").style.display = "none";
-  document.getElementById("status").textContent = "";
-
-  fetch("/api/problem/" + pid)
-    .then(r => r.json())
-    .then(data => {
-      document.getElementById("problem-desc").textContent = data.error || data.desc;
-    })
-    .catch(() => { document.getElementById("problem-desc").textContent = "加载失败"; });
+function logout() {
+  fetch("/api/logout", { method: "POST" })
+    .then(() => { window.location.href = "/login"; });
 }
-
-function submitCode() {
-  const code = document.getElementById("code").value.trim();
-  if (!currentPid) { alert("请先选择一个题目"); return; }
-  if (!code) { alert("请先输入代码"); return; }
-  if (polling) return;  // already submitting
-
-  const btn = document.getElementById("submit-btn");
-  const status = document.getElementById("status");
-  btn.disabled = true;
-  status.className = "";
-  status.textContent = "提交中...";
-
-  fetch("/api/submit", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      pid: currentPid,
-      code: code,
-      lang: document.getElementById("lang-select").value,
-      user_name: document.getElementById("user-name").value.trim() || "Anonymous",
-    }),
-  })
+function loadUser() {
+  fetch("/api/me")
     .then(r => r.json())
-    .then(data => {
-      if (data.error) {
-        status.className = "error";
-        status.textContent = data.error;
-        btn.disabled = false;
-        return;
-      }
-      // Start polling
-      status.className = "pending";
-      status.textContent = "Pending...";
-      polling = true;
-      pollResult(data.submission_id);
-    })
-    .catch(err => {
-      status.className = "error";
-      status.textContent = "提交失败: " + err.message;
-      btn.disabled = false;
-    });
-}
-
-function pollResult(submissionId) {
-  fetch("/api/result/" + submissionId)
-    .then(r => r.json())
-    .then(data => {
-      if (data.error) {
-        document.getElementById("status").className = "error";
-        document.getElementById("status").textContent = data.error;
-        document.getElementById("submit-btn").disabled = false;
-        polling = false;
-        return;
-      }
-
-      const statusEl = document.getElementById("status");
-      const status = data.status;
-
-      // Update status display
-      if (status === "Pending") {
-        statusEl.className = "pending";
-        statusEl.textContent = "Pending...";
-      } else if (status === "Running") {
-        statusEl.className = "running";
-        statusEl.textContent = "Running...";
-      } else {
-        // Final status: Accepted / Wrong Answer / Compilation Error / System Error
-        const statusClass = {
-          "Accepted": "accepted",
-          "Wrong Answer": "wa",
-          "Compilation Error": "ce",
-          "System Error": "error",
-        }[status] || "error";
-        statusEl.className = statusClass;
-        statusEl.textContent = status;
-
-        // Show detailed results
-        if (data.results) {
-          const tbody = document.getElementById("results-body");
-          tbody.innerHTML = "";
-          data.results.forEach(r => {
-            const tr = document.createElement("tr");
-            if (!r.passed) tr.className = "diff";
-            tr.innerHTML =
-              `<td>#${r.idx}</td>` +
-              `<td><code>${escapeHtml(r.input)}</code></td>` +
-              `<td><code>${escapeHtml(r.expected)}</code></td>` +
-              `<td><code>${escapeHtml(r.actual)}</code></td>` +
-              `<td class="${r.passed ? 'pass' : 'fail'}">${r.passed ? '✓' : '✗'}</td>`;
-            tbody.appendChild(tr);
-          });
-          document.getElementById("result-panel").style.display = "";
+    .then(d => {
+      const nav = document.getElementById("nav-user");
+      const logoutBtn = document.getElementById("btn-logout");
+      const adminLink = document.getElementById("nav-admin-link");
+      if (d.user) {
+        nav.innerHTML = '<span class="name">' + d.user.name + '</span>';
+        logoutBtn.style.display = "";
+        if (d.user.is_admin) {
+          adminLink.innerHTML = '<a href="/admin" class="admin-badge">管理</a>';
         }
-
-        document.getElementById("submit-btn").disabled = false;
-        polling = false;
-        return;  // stop polling
+      } else {
+        nav.innerHTML = '<a href="/login">登录</a>';
+        logoutBtn.style.display = "none";
       }
-
-      // Still pending/running → poll again in 1 second
-      setTimeout(() => pollResult(submissionId), 1000);
-    })
-    .catch(() => {
-      // Network error — retry after 1s
-      setTimeout(() => pollResult(submissionId), 1000);
     });
 }
-
-function escapeHtml(s) {
-  const d = document.createElement("div");
-  d.textContent = s;
-  return d.innerHTML;
-}
+loadUser();
 </script>
 </body>
 </html>
