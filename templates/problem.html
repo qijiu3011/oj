@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ problem.id }}. {{ problem.title }} - OJ</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -14,7 +15,7 @@
     background: #2c3e50; color: #fff; padding: 0 24px;
     display: flex; align-items: center; height: 52px; gap: 20px;
   }
-  nav .brand { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; text-decoration: none; color: #fff; }
+  nav .brand { font-size: 18px; font-weight: 700; text-decoration: none; color: #fff; }
   nav a:not(.brand) { color: #bdc3c7; text-decoration: none; font-size: 14px; }
   nav a:hover { color: #fff; }
   nav .right { margin-left: auto; }
@@ -40,7 +41,42 @@
     font-size: 15px; font-weight: 600; color: #555;
     margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee;
   }
-  #problem-desc { white-space: pre-wrap; font-size: 14px; line-height: 1.7; }
+
+  /* Markdown rendered styles */
+  #problem-desc { font-size: 14px; line-height: 1.8; }
+  #problem-desc h1 { font-size: 20px; margin: 0 0 10px 0; color: #2c3e50; }
+  #problem-desc h2 { font-size: 16px; margin: 18px 0 8px 0; color: #2c3e50; }
+  #problem-desc h3 { font-size: 14px; margin: 14px 0 6px 0; color: #555; }
+  #problem-desc p { margin: 8px 0; }
+  #problem-desc strong { color: #2c3e50; }
+  #problem-desc code {
+    background: #ecf0f1; padding: 2px 6px; border-radius: 3px;
+    font-family: "Cascadia Code", Consolas, monospace; font-size: 13px;
+  }
+  #problem-desc pre {
+    position: relative; background: #1e2a35; color: #e6e6e6;
+    padding: 16px; border-radius: 6px; overflow-x: auto;
+    margin: 10px 0; font-size: 13px; line-height: 1.6;
+  }
+  #problem-desc pre code {
+    background: none; color: inherit; padding: 0;
+    font-family: "Cascadia Code", Consolas, monospace;
+  }
+  #problem-desc .copy-btn {
+    position: absolute; top: 6px; right: 6px;
+    background: rgba(255,255,255,0.12); color: #aaa; border: none;
+    border-radius: 4px; padding: 4px 10px; font-size: 11px;
+    cursor: pointer; transition: .15s;
+  }
+  #problem-desc .copy-btn:hover { background: rgba(255,255,255,0.25); color: #fff; }
+  #problem-desc .copy-btn.copied { background: #27ae60; color: #fff; }
+  #problem-desc hr { border: none; border-top: 1px solid #eee; margin: 16px 0; }
+  #problem-desc table { border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+  #problem-desc th, #problem-desc td {
+    border: 1px solid #ddd; padding: 6px 12px; text-align: left;
+  }
+  #problem-desc th { background: #f8f9fa; }
+
   textarea {
     width: 100%; min-height: 280px; font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", Consolas, monospace;
     font-size: 13px; padding: 12px; border: 1px solid #ddd; border-radius: 6px;
@@ -64,6 +100,7 @@
   #status.wa { color: #e74c3c; font-weight: 600; }
   #status.ce { color: #e74c3c; }
   #status.error { color: #e74c3c; }
+
   .results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .results-table th {
     text-align: left; padding: 8px 10px; background: #f8f9fa;
@@ -73,6 +110,16 @@
   .results-table .pass { color: #27ae60; font-weight: 600; }
   .results-table .fail { color: #e74c3c; font-weight: 600; }
   .diff { background: #fff0f0; }
+  .results-table .cell-code {
+    font-family: "Cascadia Code", Consolas, monospace; font-size: 12px;
+    cursor: pointer; position: relative; display: inline-block;
+  }
+  .results-table .cell-code:hover { color: #2c3e50; }
+  .results-table .copy-tip {
+    font-size: 10px; color: #888; margin-left: 4px; opacity: 0; transition: .15s;
+  }
+  .results-table tr:hover .copy-tip { opacity: 1; }
+
   select, input {
     padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px;
     font-size: 14px; background: #fff;
@@ -87,8 +134,9 @@
 </head>
 <body>
 <nav>
-  <a href="/" class="brand">📖 OJ</a>
+  <a href="/" class="brand">OJ</a>
   <a href="/">题目列表</a>
+  <a href="/contests">比赛</a>
   <a href="/rank">排行榜</a>
   <div class="right"></div>
 </nav>
@@ -104,10 +152,10 @@
     </div>
   </div>
   <div class="main">
-    <a href="/" class="back-link">← 返回题目列表</a>
+    <a href="/" class="back-link" id="back-link">← 返回题目列表</a>
     <div class="panel">
-      <div class="panel-title">{{ problem.id }}. {{ problem.title }}</div>
-      <pre id="problem-desc">{{ problem.desc }}</pre>
+      <div class="panel-title" id="prob-title">{{ problem.id }}. {{ problem.title }}</div>
+      <div id="problem-desc"></div>
     </div>
     <div class="panel">
       <div class="panel-title">提交代码</div>
@@ -121,12 +169,12 @@
       <textarea id="code" placeholder="在此粘贴代码"></textarea>
       <div class="toolbar">
         <button class="btn btn-primary" id="submit-btn" onclick="submitCode()">提交评测</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('code').value=''">清空</button>
+        <button class="btn btn-secondary" onclick="clearCode()">清空</button>
         <span id="status"></span>
       </div>
     </div>
     <div class="panel" id="result-panel" style="display:none">
-      <div class="panel-title">评测结果</div>
+      <div class="panel-title">评测结果 <span id="result-verdict" style="margin-left:8px;font-size:13px"></span></div>
       <table class="results-table">
         <thead><tr><th>测试点</th><th>输入</th><th>期望输出</th><th>实际输出</th><th>结果</th></tr></thead>
         <tbody id="results-body"></tbody>
@@ -136,12 +184,55 @@
 </div>
 <script>
 const CURRENT_PID = "{{ problem.id }}";
+const RAW_DESC = {{ problem.desc | tojson }};
+const CONTEST_ID = {{ contest_id if contest_id else "null" }};
 let polling = false;
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Load user info
   fetch("/api/me");
+  renderMarkdown();
+  // If viewing from contest, update back link
+  if (CONTEST_ID) {
+    document.getElementById("back-link").href = "/contest/" + CONTEST_ID;
+    document.getElementById("back-link").textContent = "← 返回比赛";
+  }
 });
+
+function renderMarkdown() {
+  const div = document.getElementById("problem-desc");
+  div.innerHTML = marked.parse(RAW_DESC);
+  // Add copy buttons to all code blocks
+  div.querySelectorAll("pre").forEach(pre => {
+    const btn = document.createElement("button");
+    btn.className = "copy-btn";
+    btn.textContent = "复制";
+    btn.onclick = () => {
+      const code = pre.querySelector("code");
+      const text = code ? code.textContent : pre.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = "已复制 ✓";
+        btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "复制"; btn.classList.remove("copied"); }, 1500);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement("textarea");
+        ta.value = text; document.body.appendChild(ta);
+        ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+        btn.textContent = "已复制 ✓";
+        btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "复制"; btn.classList.remove("copied"); }, 1500);
+      });
+    };
+    pre.style.position = "relative";
+    pre.appendChild(btn);
+  });
+}
+
+function clearCode() {
+  document.getElementById("code").value = "";
+  document.getElementById("status").textContent = "";
+  document.getElementById("status").className = "";
+}
 
 function submitCode() {
   const code = document.getElementById("code").value.trim();
@@ -161,6 +252,7 @@ function submitCode() {
       pid: CURRENT_PID,
       code,
       lang: document.getElementById("lang-select").value,
+      contest_id: CONTEST_ID,
     }),
   })
     .then(r => r.json().then(d => ({status: r.status, body: d})))
@@ -189,8 +281,7 @@ function pollResult(submissionId) {
     .then(r => r.json())
     .then(data => {
       if (data.error) {
-        document.getElementById("status").className = "error";
-        document.getElementById("status").textContent = data.error;
+        setStatus("error", data.error);
         document.getElementById("submit-btn").disabled = false;
         polling = false;
         return;
@@ -214,7 +305,12 @@ function pollResult(submissionId) {
           data.results.forEach(r => {
             const tr = document.createElement("tr");
             if (!r.passed) tr.className = "diff";
-            tr.innerHTML = `<td>#${r.idx}</td><td><code>${esc(r.input)}</code></td><td><code>${esc(r.expected)}</code></td><td><code>${esc(r.actual)}</code></td><td class="${r.passed ? 'pass' : 'fail'}">${r.passed ? '✓' : '✗'}</td>`;
+            tr.innerHTML =
+              `<td>#${r.idx}</td>` +
+              `<td><span class="cell-code" onclick="copyText(this)" data-text="${escAttr(r.input)}">${esc(r.input)}<span class="copy-tip">📋</span></span></td>` +
+              `<td><span class="cell-code" onclick="copyText(this)" data-text="${escAttr(r.expected)}">${esc(r.expected)}<span class="copy-tip">📋</span></span></td>` +
+              `<td><span class="cell-code" onclick="copyText(this)" data-text="${escAttr(r.actual)}">${esc(r.actual)}<span class="copy-tip">📋</span></span></td>` +
+              `<td class="${r.passed ? 'pass' : 'fail'}">${r.passed ? '✓' : '✗'}</td>`;
             tbody.appendChild(tr);
           });
           document.getElementById("result-panel").style.display = "";
@@ -228,7 +324,25 @@ function pollResult(submissionId) {
     .catch(() => setTimeout(() => pollResult(submissionId), 1000));
 }
 
+function setStatus(cls, msg) {
+  const el = document.getElementById("status");
+  el.className = cls; el.textContent = msg;
+}
+
+function copyText(el) {
+  const text = el.dataset.text;
+  navigator.clipboard.writeText(text).then(() => {
+    const tip = el.querySelector(".copy-tip");
+    if (tip) { tip.textContent = "✓"; setTimeout(() => { tip.textContent = "📋"; }, 1000); }
+  }).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+  });
+}
+
 function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function escAttr(s) { return (s || "").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
 </script>
 </body>
 </html>

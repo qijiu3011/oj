@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ contest.title }} - OJ</title>
+<script>
+  const CONTEST_ID = {{ contest.id }};
+  const START_TIME = "{{ contest.start_time }}";
+  const END_TIME = "{{ contest.end_time }}";
+</script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: #f5f5f5; color: #333; min-height: 100vh;
+  }
+  nav {
+    background: #2c3e50; color: #fff; padding: 0 24px;
+    display: flex; align-items: center; height: 52px; gap: 20px;
+  }
+  nav .brand { font-size: 18px; font-weight: 700; text-decoration: none; color: #fff; }
+  nav a:not(.brand) { color: #bdc3c7; text-decoration: none; font-size: 14px; }
+  nav a:hover { color: #fff; }
+  nav .right { margin-left: auto; }
+  .container { max-width: 1100px; margin: 24px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 16px; }
+  .panel {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 20px;
+  }
+  .panel-title { font-size: 16px; font-weight: 600; color: #555; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+  .header-info { display: flex; gap: 24px; flex-wrap: wrap; font-size: 14px; color: #555; }
+  .header-info span strong { color: #2c3e50; }
+  #countdown { font-size: 15px; font-weight: 600; color: #e67e22; }
+  #countdown.ended { color: #888; }
+
+  .prob-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .prob-table th { text-align: left; padding: 8px 12px; background: #f8f9fa; border-bottom: 2px solid #dee2e6; font-weight: 600; color: #555; }
+  .prob-table td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+  .prob-table tr:hover td { background: #f8f9fa; }
+  .prob-table a { color: #2c3e50; text-decoration: none; font-weight: 500; }
+  .prob-table a:hover { color: #3498db; }
+
+  .rank-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rank-table th { text-align: left; padding: 8px 10px; background: #f8f9fa; border-bottom: 2px solid #dee2e6; font-weight: 600; color: #555; white-space: nowrap; }
+  .rank-table td { padding: 8px 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
+  .rank-table tr:hover td { background: #f8f9fa; }
+  .rank-num { font-weight: 700; color: #2c3e50; }
+  .rank-1 { color: #f1c40f; } .rank-2 { color: #95a5a6; } .rank-3 { color: #e67e22; }
+  .ac-badge { display: inline-block; background: #27ae60; color: #fff; padding: 1px 8px; border-radius: 8px; font-weight: 600; font-size: 12px; }
+  .prob-pass { color: #27ae60; font-weight: 600; }
+  .prob-fail { color: #e74c3c; }
+  .prob-none { color: #ddd; }
+  .prob-attempts { font-size: 11px; color: #888; display: block; }
+  .loading-row { text-align: center; color: #aaa; padding: 20px; }
+  .back-link { display: inline-block; font-size: 13px; color: #7f8c8d; text-decoration: none; }
+  .back-link:hover { color: #2c3e50; }
+  .desc-text { font-size: 14px; color: #555; margin-top: 4px; }
+  .prob-label { display: inline-block; background: #2c3e50; color: #fff; font-size: 12px; padding: 1px 8px; border-radius: 4px; margin-right: 4px; font-weight: 700; }
+  .tag-temp { background: #e74c3c; font-size: 11px; padding: 1px 6px; border-radius: 4px; color: #fff; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">OJ</a>
+  <a href="/">题目列表</a>
+  <a href="/contests">比赛</a>
+  <a href="/rank">排行榜</a>
+  <div class="right"></div>
+</nav>
+<div class="container">
+  <!-- Header -->
+  <div class="panel">
+    <div class="panel-title" id="contest-title">{{ contest.title }}</div>
+    <div class="header-info">
+      <span><strong>开始：</strong><span id="start-display">{{ contest.start_time.replace('T', ' ') }}</span></span>
+      <span><strong>结束：</strong><span id="end-display">{{ contest.end_time.replace('T', ' ') }}</span></span>
+      <span><strong id="countdown-label">状态：</strong><span id="countdown">加载中...</span></span>
+    </div>
+    {% if contest.description %}
+    <div class="desc-text">{{ contest.description }}</div>
+    {% endif %}
+  </div>
+
+  <!-- Problems -->
+  <div class="panel" id="problems-panel">
+    <div class="panel-title">题目列表</div>
+    <div id="problems-body"><p style="color:#aaa">加载中...</p></div>
+  </div>
+
+  <!-- Rank -->
+  <div class="panel">
+    <div class="panel-title">实时排名 <span id="rank-update-time" style="font-size:12px;color:#888;font-weight:400;margin-left:8px"></span></div>
+    <div id="rank-body"><p style="color:#aaa">加载中...</p></div>
+  </div>
+</div>
+<script>
+let rankTimer = null;
+
+function updateCountdown() {
+  const now = new Date();
+  const start = new Date(START_TIME);
+  const end = new Date(END_TIME);
+  const el = document.getElementById("countdown");
+
+  if (now < start) {
+    const diff = Math.floor((start - now) / 1000);
+    const d = Math.floor(diff / 86400), h = Math.floor((diff % 86400) / 3600);
+    const m = Math.floor((diff % 3600) / 60), s = diff % 60;
+    el.className = "";
+    el.textContent = `距离开始还有 ${d}天${h}时${m}分${s}秒`;
+  } else if (now <= end) {
+    const diff = Math.floor((end - now) / 1000);
+    const d = Math.floor(diff / 86400), h = Math.floor((diff % 86400) / 3600);
+    const m = Math.floor((diff % 3600) / 60), s = diff % 60;
+    el.className = "";
+    el.textContent = `剩余 ${d}天${h}时${m}分${s}秒`;
+  } else {
+    el.className = "ended";
+    el.textContent = "已结束";
+    if (rankTimer) { clearInterval(rankTimer); rankTimer = null; }
+  }
+}
+
+function loadContestInfo() {
+  fetch("/api/contest/" + CONTEST_ID)
+    .then(r => r.json())
+    .then(data => {
+      const pb = document.getElementById("problems-body");
+      if (!data.problems || !data.problems.length) {
+        pb.innerHTML = '<p style="color:#aaa">暂无题目</p>'; return;
+      }
+      const labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      let html = '<table class="prob-table"><thead><tr><th style="width:50px">题号</th><th>题目名称</th></tr></thead><tbody>';
+      data.problems.forEach((p, i) => {
+        const label = labels[i] || "?";
+        const tag = p.is_visible === 0 ? ' <span class="tag-temp">临时</span>' : "";
+        html += `<tr><td><span class="prob-label">${label}</span></td><td><a href="/problem/${p.id}?contest=${CONTEST_ID}">${esc(p.title)}</a>${tag}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      pb.innerHTML = html;
+    });
+}
+
+function loadRank() {
+  fetch("/api/contest/" + CONTEST_ID + "/rank")
+    .then(r => r.json())
+    .then(data => {
+      const div = document.getElementById("rank-body");
+      const now = new Date(); const end = new Date(END_TIME);
+      document.getElementById("rank-update-time").textContent =
+        now > end ? "（最终排名）" : "更新于 " + now.toLocaleTimeString();
+
+      const labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const pids = data.problems || [];
+
+      // Header
+      let html = '<table class="rank-table"><thead><tr><th>排名</th><th>学号</th><th>姓名</th><th>AC</th><th>罚时</th>';
+      pids.forEach((pid, i) => { html += `<th>${labels[i] || "?"}</th>`; });
+      html += '</tr></thead><tbody>';
+
+      if (!data.rank || !data.rank.length) {
+        html += '<tr><td colspan="' + (5 + pids.length) + '" class="loading-row">暂无提交记录</td></tr>';
+      } else {
+        data.rank.forEach(r => {
+          const cls = r.rank === 1 ? "rank-1" : r.rank === 2 ? "rank-2" : r.rank === 3 ? "rank-3" : "";
+          html += `<tr><td><span class="rank-num ${cls}">${r.rank}</span></td>
+            <td>${esc(r.student_id)}</td>
+            <td>${esc(r.name)}</td>
+            <td><span class="ac-badge">${r.ac_count}</span></td>
+            <td>${r.penalty}</td>`;
+          pids.forEach(pid => {
+            const ps = r.problems[pid];
+            if (!ps) {
+              html += `<td><span class="prob-none">·</span></td>`;
+            } else if (ps.accepted) {
+              html += `<td><span class="prob-pass">✓</span><span class="prob-attempts">${ps.penalty}</span></td>`;
+            } else {
+              html += `<td><span class="prob-fail">✗${ps.attempts}</span></td>`;
+            }
+          });
+          html += '</tr>';
+        });
+      }
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    });
+}
+
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadContestInfo();
+  loadRank();
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+
+  // Auto-refresh rank every 5s if contest is running/upcoming
+  rankTimer = setInterval(() => {
+    const now = new Date(); const end = new Date(END_TIME);
+    if (now > end) {
+      if (rankTimer) { clearInterval(rankTimer); rankTimer = null; }
+      // One final load
+      loadRank(); return;
+    }
+    loadRank();
+  }, 5000);
+});
+</script>
+</body>
+</html>

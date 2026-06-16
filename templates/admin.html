@@ -18,6 +18,7 @@
   nav a:not(.brand) { color: #bdc3c7; text-decoration: none; font-size: 14px; }
   nav a:hover { color: #fff; }
   nav .right { margin-left: auto; }
+  .admin-badge { background: #e74c3c; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
   .container { max-width: 1000px; margin: 24px auto; padding: 0 20px; display: flex; gap: 20px; }
   .side { width: 220px; flex-shrink: 0; }
   .side .card {
@@ -64,9 +65,11 @@
 </head>
 <body>
 <nav>
-  <a href="/" class="brand">📖 OJ</a>
+  <a href="/" class="brand">OJ</a>
   <a href="/">题目列表</a>
+  <a href="/contests">比赛</a>
   <a href="/rank">排行榜</a>
+  <a href="/admin/contests" class="admin-badge" style="text-decoration:none">管理比赛</a>
   <div class="right"></div>
 </nav>
 <div class="container">

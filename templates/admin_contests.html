@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理比赛 - OJ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: #f5f5f5; color: #333; min-height: 100vh;
+  }
+  nav {
+    background: #2c3e50; color: #fff; padding: 0 24px;
+    display: flex; align-items: center; height: 52px; gap: 20px;
+  }
+  nav .brand { font-size: 18px; font-weight: 700; text-decoration: none; color: #fff; }
+  nav a:not(.brand) { color: #bdc3c7; text-decoration: none; font-size: 14px; }
+  nav a:hover { color: #fff; }
+  nav .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .container { max-width: 1000px; margin: 24px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 16px; }
+  .panel {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 20px;
+  }
+  .panel-title { font-size: 16px; font-weight: 600; color: #555; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: #555; margin-bottom: 4px; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;
+  }
+  .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #2c3e50; }
+  .form-row { display: flex; gap: 16px; }
+  .form-row .form-group { flex: 1; }
+
+  .btn {
+    padding: 8px 20px; border: none; border-radius: 6px;
+    font-size: 14px; font-weight: 500; cursor: pointer; transition: .15s;
+  }
+  .btn-primary { background: #2c3e50; color: #fff; }
+  .btn-primary:hover { background: #1a252f; }
+  .btn-success { background: #27ae60; color: #fff; }
+  .btn-success:hover { background: #219a52; }
+  .btn-danger { background: #e74c3c; color: #fff; }
+  .btn-danger:hover { background: #c0392b; }
+  .btn-secondary { background: #ecf0f1; color: #333; }
+  .btn-secondary:hover { background: #d5dbdb; }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+
+  .prob-checkbox { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .prob-checkbox input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+  .prob-checkbox label { cursor: pointer; font-size: 14px; }
+
+  .temp-problem { background: #fef9e7; border: 1px solid #f9e79f; border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+  .temp-problem h4 { font-size: 13px; color: #856404; margin-bottom: 8px; }
+  .temp-problem .form-group { margin-bottom: 8px; }
+  .temp-problem input[type="file"] { font-size: 13px; }
+
+  .msg { font-size: 13px; margin-top: 8px; }
+  .msg.ok { color: #27ae60; }
+  .msg.err { color: #e74c3c; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 8px 10px; background: #f8f9fa; border-bottom: 2px solid #dee2e6; font-weight: 600; color: #555; }
+  td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  .status-running { color: #27ae60; font-weight: 500; }
+  .status-upcoming { color: #e67e22; font-weight: 500; }
+  .status-ended { color: #888; }
+  .btn-small { padding: 4px 10px; font-size: 12px; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">OJ</a>
+  <a href="/admin">题目管理</a>
+  <a href="/admin/contests">管理比赛</a>
+  <div class="right"></div>
+</nav>
+<div class="container">
+  <!-- Create contest form -->
+  <div class="panel">
+    <div class="panel-title">➕ 创建比赛</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>比赛标题</label>
+        <input id="title" placeholder="如：2026 校赛">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>描述（可选）</label>
+      <textarea id="description" rows="2" placeholder="比赛简介"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>开始时间</label>
+        <input id="start_time" type="datetime-local">
+      </div>
+      <div class="form-group">
+        <label>结束时间</label>
+        <input id="end_time" type="datetime-local">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>选择题目</label>
+      <div id="problem-checkboxes">
+        {% for p in problems %}
+        <div class="prob-checkbox">
+          <input type="checkbox" id="chk-{{ p.id }}" value="{{ p.id }}">
+          <label for="chk-{{ p.id }}">{{ p.id }}. {{ p.title }}</label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:16px">📦 临时题目（可选）</div>
+    <p style="font-size:13px;color:#888;margin-bottom:10px">比赛专用临时题目，赛后可一键发布到主列表。</p>
+    <div id="temp-problems-area"></div>
+    <div class="toolbar">
+      <button class="btn btn-secondary" onclick="addTempProblem()">+ 添加临时题目</button>
+    </div>
+
+    <div class="toolbar" style="margin-top:16px">
+      <button class="btn btn-success" onclick="createContest()">创建比赛</button>
+      <span id="create-msg" class="msg"></span>
+    </div>
+  </div>
+
+  <!-- Existing contests -->
+  <div class="panel">
+    <div class="panel-title">已有比赛</div>
+    <div id="existing-contests"><p style="color:#aaa">加载中...</p></div>
+  </div>
+</div>
+<script>
+let tempCount = 0;
+
+function addTempProblem() {
+  const area = document.getElementById("temp-problems-area");
+  const i = tempCount++;
+  const div = document.createElement("div");
+  div.className = "temp-problem";
+  div.id = "temp-" + i;
+  div.innerHTML = `
+    <h4>临时题目 #${i+1}</h4>
+    <div class="form-group">
+      <label>题目描述文件（desc.txt 或 desc.md）</label>
+      <input type="file" id="temp-desc-${i}" accept=".txt,.md">
+    </div>
+    <div class="form-group">
+      <label>测试数据（.zip，含 input*.txt / output*.txt）</label>
+      <input type="file" id="temp-zip-${i}" accept=".zip">
+    </div>
+    <button class="btn btn-danger btn-small" onclick="document.getElementById('temp-${i}').remove()">移除</button>
+  `;
+  area.appendChild(div);
+}
+
+function createContest() {
+  const title = document.getElementById("title").value.trim();
+  const start = document.getElementById("start_time").value;
+  const end = document.getElementById("end_time").value;
+  if (!title || !start || !end) { alert("请填写标题和起止时间"); return; }
+  if (start >= end) { alert("结束时间必须在开始时间之后"); return; }
+
+  const formData = new FormData();
+  formData.append("title", title);
+  formData.append("description", document.getElementById("description").value.trim());
+  formData.append("start_time", start.replace("T", " ") + ":00");
+  formData.append("end_time", end.replace("T", " ") + ":00");
+
+  // Selected problems
+  document.querySelectorAll("#problem-checkboxes input:checked").forEach(cb => {
+    formData.append("problem_ids[]", cb.value);
+  });
+
+  // Temp problems
+  formData.append("temp_count", tempCount);
+  for (let i = 0; i < tempCount; i++) {
+    const descInput = document.getElementById("temp-desc-" + i);
+    const zipInput = document.getElementById("temp-zip-" + i);
+    if (descInput && descInput.files[0]) {
+      formData.append("temp_desc_" + i, descInput.files[0]);
+      if (zipInput && zipInput.files[0]) {
+        formData.append("temp_zip_" + i, zipInput.files[0]);
+      }
+    }
+  }
+
+  const btn = document.querySelector(".btn-success");
+  const msg = document.getElementById("create-msg");
+  btn.disabled = true; msg.className = "msg"; msg.textContent = "创建中...";
+
+  fetch("/api/admin/contests/create", { method: "POST", body: formData })
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) { msg.className = "msg err"; msg.textContent = d.error; btn.disabled = false; return; }
+      msg.className = "msg ok"; msg.textContent = "✓ 创建成功！";
+      btn.disabled = false;
+      loadExistingContests();
+      // Reset form
+      document.getElementById("title").value = "";
+      document.getElementById("description").value = "";
+      document.getElementById("start_time").value = "";
+      document.getElementById("end_time").value = "";
+      document.querySelectorAll("#problem-checkboxes input:checked").forEach(cb => cb.checked = false);
+      document.getElementById("temp-problems-area").innerHTML = "";
+      tempCount = 0;
+    })
+    .catch(() => { msg.className = "msg err"; msg.textContent = "创建失败"; btn.disabled = false; });
+}
+
+function loadExistingContests() {
+  fetch("/api/contests")
+    .then(r => r.json())
+    .then(data => {
+      const div = document.getElementById("existing-contests");
+      if (!data.length) { div.innerHTML = '<p style="color:#aaa">暂无比赛</p>'; return; }
+      let html = '<table><thead><tr><th>ID</th><th>标题</th><th>状态</th><th>开始</th><th>结束</th></tr></thead><tbody>';
+      data.forEach(c => {
+        const st = {running: "进行中", upcoming: "未开始", ended: "已结束"}[c.status] || c.status;
+        html += `<tr><td>${c.id}</td><td><a href="/contest/${c.id}" style="color:#2c3e50;text-decoration:none">${esc(c.title)}</a></td>
+          <td class="status-${c.status}">${st}</td>
+          <td>${c.start_time.replace('T', ' ')}</td><td>${c.end_time.replace('T', ' ')}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    });
+}
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+loadExistingContests();
+</script>
+</body>
+</html>

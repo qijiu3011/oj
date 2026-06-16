@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比赛列表 - OJ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: #f5f5f5; color: #333; min-height: 100vh;
+  }
+  nav {
+    background: #2c3e50; color: #fff; padding: 0 24px;
+    display: flex; align-items: center; height: 52px; gap: 20px;
+  }
+  nav .brand { font-size: 18px; font-weight: 700; text-decoration: none; color: #fff; }
+  nav a:not(.brand) { color: #bdc3c7; text-decoration: none; font-size: 14px; }
+  nav a:hover { color: #fff; }
+  nav .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .container { max-width: 900px; margin: 30px auto; padding: 0 20px; }
+  .panel {
+    background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    padding: 24px;
+  }
+  .panel h2 { font-size: 18px; margin-bottom: 16px; color: #2c3e50; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 10px 12px; background: #f8f9fa; border-bottom: 2px solid #dee2e6; font-weight: 600; color: #555; }
+  td { padding: 12px; border-bottom: 1px solid #eee; }
+  tr:hover td { background: #f8f9fa; }
+  .contest-title { color: #2c3e50; font-weight: 500; text-decoration: none; }
+  .contest-title:hover { color: #3498db; }
+  .time-cell { font-size: 13px; color: #555; }
+  .status-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+  .status-running { background: #d4edda; color: #155724; }
+  .status-upcoming { background: #fff3cd; color: #856404; }
+  .status-ended { background: #e2e3e5; color: #383d41; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">OJ</a>
+  <a href="/">题目列表</a>
+  <a href="/contests">比赛</a>
+  <a href="/rank">排行榜</a>
+  <div class="right"></div>
+</nav>
+<div class="container">
+  <div class="panel">
+    <h2>比赛列表</h2>
+    <div id="contest-list"><p style="color:#aaa">加载中...</p></div>
+  </div>
+</div>
+<script>
+function loadContests() {
+  fetch("/api/contests")
+    .then(r => r.json())
+    .then(data => {
+      const div = document.getElementById("contest-list");
+      if (!data.length) {
+        div.innerHTML = '<p style="color:#aaa">暂无比赛</p>'; return;
+      }
+      let html = '<table><thead><tr><th>比赛名称</th><th>状态</th><th>开始时间</th><th>结束时间</th></tr></thead><tbody>';
+      data.forEach(c => {
+        const statusText = {running: "进行中", upcoming: "未开始", ended: "已结束"}[c.status] || c.status;
+        const statusCls = "status-badge status-" + c.status;
+        html += `<tr>
+          <td><a class="contest-title" href="/contest/${c.id}">${esc(c.title)}</a></td>
+          <td><span class="${statusCls}">${statusText}</span></td>
+          <td class="time-cell">${c.start_time.replace('T', ' ')}</td>
+          <td class="time-cell">${c.end_time.replace('T', ' ')}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    })
+    .catch(() => document.getElementById("contest-list").innerHTML = '<p style="color:#e74c3c">加载失败</p>');
+}
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+loadContests();
+</script>
+</body>
+</html>

@@ -1,18 +1,18 @@
 A+B Problem
 
-Time Limit: 1s    Memory Limit: 256MB
+时间限制: 1s    内存限制: 256MB
 
-Description
+题目描述
 Calculate a + b.
 
-Input
-Two integers a, b.
+输入
+a, b
 
-Output
-One integer, the sum of a and b.
+输出
+a和b的和
 
-Sample Input
+示例输入
 1 2
 
-Sample Output
+示例输出
 3
