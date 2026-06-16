@@ -1,0 +1,33 @@
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 虚拟环境
+venv/
+env/
+.venv
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志和数据库（后续扩展可能用到）
+*.log
+*.db
+*.sqlite3
+
+# 临时文件夹（防止误传本地测试产生的临时目录）
+temp/
+tmp/
+*.tmp
+
+# 系统文件
+Thumbs.db
+.DS_Store
+
+# Flask 默认的 instance 文件夹
+instance/

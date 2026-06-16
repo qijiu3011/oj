@@ -1,0 +1,18 @@
+A+B Problem
+
+Time Limit: 1s    Memory Limit: 256MB
+
+Description
+Calculate a + b.
+
+Input
+Two integers a, b.
+
+Output
+One integer, the sum of a and b.
+
+Sample Input
+1 2
+
+Sample Output
+3
